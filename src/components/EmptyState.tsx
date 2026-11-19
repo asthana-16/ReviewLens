@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, UploadCloud, ShieldCheck, Zap, BarChart2 } from 'lucide-react';
+import { Sparkles, UploadCloud, ShieldCheck, Zap } from 'lucide-react';
 
 interface EmptyStateProps {
   onUploadClick: () => void;

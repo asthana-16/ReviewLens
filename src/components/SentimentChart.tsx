@@ -51,7 +51,7 @@ export default function SentimentChart({ summary }: SentimentChartProps) {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: any) => [`${value}%`, '']}
+                formatter={(value) => [`${value}%`, '']}
                 contentStyle={{
                   borderRadius: '8px',
                   border: '1px solid #e2e8f0',

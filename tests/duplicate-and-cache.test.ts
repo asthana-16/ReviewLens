@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { saveAnalysis, getCachedAnalysis, batchLookup, closeDb } from '@/services/cache-service';
+import { describe, it, expect } from 'vitest';
+import { saveAnalysis, getCachedAnalysis, batchLookup } from '@/services/cache-service';
 import { hashText } from '@/services/csv-service';
 import type { AIAnalysis } from '@/types';
 

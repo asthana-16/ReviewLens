@@ -14,7 +14,7 @@ import {
   X,
   Eye,
 } from 'lucide-react';
-import type { AnalysedReview } from '@/types';
+import type { AnalysedReview, Topic } from '@/types';
 
 interface ReviewsTableProps {
   reviews: AnalysedReview[];
@@ -64,7 +64,7 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
       // Topic filter
       if (
         filterTopic !== 'all' &&
-        !review.analysis?.topics.includes(filterTopic as any)
+        !review.analysis?.topics.includes(filterTopic as Topic)
       )
         return false;
 
