@@ -1,6 +1,13 @@
 'use client';
 
-import { BarChart3, TrendingUp, Minus, TrendingDown, MessageSquareWarning } from 'lucide-react';
+import {
+  BarChart3,
+  TrendingUp,
+  Minus,
+  TrendingDown,
+  MessageSquareWarning,
+  Sparkles,
+} from 'lucide-react';
 
 interface SummaryCardsProps {
   summary: {
@@ -16,58 +23,87 @@ interface SummaryCardsProps {
 export default function SummaryCards({ summary }: SummaryCardsProps) {
   const cards = [
     {
-      label: 'Total Analysed',
-      value: summary.total,
+      label: 'Total Reviews',
+      value: summary.total.toLocaleString(),
+      subtext: `${summary.ratingAgreementPercent}% rating alignment`,
       icon: BarChart3,
-      color: 'text-[#3b82f6]',
-      bg: 'bg-[#3b82f6]/10',
+      badge: 'Analyzed',
+      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+      iconColor: 'text-blue-600',
+      iconBg: 'bg-blue-50',
     },
     {
-      label: 'Positive',
+      label: 'Positive Sentiment',
       value: `${summary.positivePercent}%`,
+      subtext: `${Math.round((summary.total * summary.positivePercent) / 100)} satisfied customers`,
       icon: TrendingUp,
-      color: 'text-[#22c55e]',
-      bg: 'bg-[#22c55e]/10',
+      badge: 'Positive',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      iconColor: 'text-emerald-600',
+      iconBg: 'bg-emerald-50',
     },
     {
-      label: 'Neutral',
+      label: 'Neutral Sentiment',
       value: `${summary.neutralPercent}%`,
+      subtext: `${Math.round((summary.total * summary.neutralPercent) / 100)} mixed opinions`,
       icon: Minus,
-      color: 'text-[#f59e0b]',
-      bg: 'bg-[#f59e0b]/10',
+      badge: 'Neutral',
+      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      iconColor: 'text-amber-600',
+      iconBg: 'bg-amber-50',
     },
     {
-      label: 'Negative',
+      label: 'Negative Sentiment',
       value: `${summary.negativePercent}%`,
+      subtext: `${Math.round((summary.total * summary.negativePercent) / 100)} critical reviews`,
       icon: TrendingDown,
-      color: 'text-[#ef4444]',
-      bg: 'bg-[#ef4444]/10',
+      badge: 'Attention',
+      badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
+      iconColor: 'text-rose-600',
+      iconBg: 'bg-rose-50',
     },
     {
-      label: 'Need Reply',
-      value: summary.needsReply,
+      label: 'Needs Response',
+      value: summary.needsReply.toLocaleString(),
+      subtext: 'Actionable support requests',
       icon: MessageSquareWarning,
-      color: 'text-[#7c3aed]',
-      bg: 'bg-[#7c3aed]/10',
+      badge: 'Pending',
+      badgeColor: 'bg-violet-50 text-violet-700 border-violet-200',
+      iconColor: 'text-violet-600',
+      iconBg: 'bg-violet-50',
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
           <div
             key={card.label}
-            className="bg-white rounded-xl border border-[#e2e8f0] p-4"
+            className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
           >
-            <div className="flex items-center gap-2 mb-3">
-              <div className={`p-1.5 rounded-lg ${card.bg}`}>
-                <Icon className={`w-4 h-4 ${card.color}`} />
+            {/* Top row: Icon and Micro-Badge */}
+            <div className="flex items-center justify-between mb-3">
+              <div className={`p-2.5 rounded-lg ${card.iconBg}`}>
+                <Icon className={`w-4 h-4 ${card.iconColor}`} />
+              </div>
+              <span
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${card.badgeColor}`}
+              >
+                {card.badge}
+              </span>
+            </div>
+
+            {/* Main Value */}
+            <div>
+              <p className="text-2xl font-bold text-slate-900 tracking-tight">{card.value}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">{card.label}</p>
+              <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
+                <Sparkles className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">{card.subtext}</span>
               </div>
             </div>
-            <p className="text-2xl font-bold text-[#1e293b]">{card.value}</p>
-            <p className="text-xs text-[#64748b] mt-1">{card.label}</p>
           </div>
         );
       })}

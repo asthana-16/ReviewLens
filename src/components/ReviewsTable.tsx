@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import {
   Search,
   Filter,
-  MessageSquare,
   Copy,
   Check,
   Loader2,
@@ -13,6 +12,9 @@ import {
   ChevronRight,
   X,
   Eye,
+  Star,
+  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import type { AnalysedReview, Topic } from '@/types';
 
@@ -23,9 +25,18 @@ interface ReviewsTableProps {
 const ITEMS_PER_PAGE = 10;
 
 const SENTIMENT_STYLES = {
-  positive: 'bg-[#22c55e]/10 text-[#16a34a]',
-  neutral: 'bg-[#f59e0b]/10 text-[#d97706]',
-  negative: 'bg-[#ef4444]/10 text-[#dc2626]',
+  positive: {
+    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  neutral: {
+    badge: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-500',
+  },
+  negative: {
+    badge: 'bg-rose-50 text-rose-700 border-rose-200',
+    dot: 'bg-rose-500',
+  },
 };
 
 export default function ReviewsTable({ reviews }: ReviewsTableProps) {
@@ -39,36 +50,31 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
   >({});
   const [selectedReview, setSelectedReview] = useState<AnalysedReview | null>(null);
 
-  // Get unique products for filter
+  // Unique products
   const products = useMemo(
     () => [...new Set(reviews.map((r) => r.product).filter(Boolean))],
     [reviews]
   );
 
-  // Filter and search reviews
+  // Filtering
   const filteredReviews = useMemo(() => {
     return reviews.filter((review) => {
-      // Skip empty reviews in the table
       if (review.status === 'empty') return false;
 
-      // Product filter
       if (filterProduct !== 'all' && review.product !== filterProduct) return false;
 
-      // Sentiment filter
       if (
         filterSentiment !== 'all' &&
         review.analysis?.sentiment !== filterSentiment
       )
         return false;
 
-      // Topic filter
       if (
         filterTopic !== 'all' &&
         !review.analysis?.topics.includes(filterTopic as Topic)
       )
         return false;
 
-      // Search query
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
@@ -83,20 +89,20 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
     });
   }, [reviews, filterProduct, filterSentiment, filterTopic, searchQuery]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredReviews.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filteredReviews.length / ITEMS_PER_PAGE));
   const paginatedReviews = filteredReviews.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Reset to page 1 when filters change
-  const handleFilterChange = (setter: (v: string) => void, value: string) => {
-    setter(value);
+  const resetFilters = () => {
+    setSearchQuery('');
+    setFilterProduct('all');
+    setFilterSentiment('all');
+    setFilterTopic('all');
     setCurrentPage(1);
   };
 
-  // Generate AI reply
   const handleGenerateReply = async (review: AnalysedReview) => {
     if (!review.analysis) return;
 
@@ -138,7 +144,6 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
     }
   };
 
-  // Copy reply to clipboard
   const handleCopyReply = async (reviewId: string, reply: string) => {
     await navigator.clipboard.writeText(reply);
     setReplyStates((prev) => ({
@@ -153,35 +158,48 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
     }, 2000);
   };
 
+  const hasActiveFilters =
+    searchQuery !== '' ||
+    filterProduct !== 'all' ||
+    filterSentiment !== 'all' ||
+    filterTopic !== 'all';
+
   return (
-    <div className="bg-white rounded-xl border border-[#e2e8f0]">
-      {/* Header with search and filters */}
-      <div className="p-4 border-b border-[#e2e8f0]">
-        <div className="flex flex-col md:flex-row gap-3">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
+    <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+      {/* Search and Filters Header */}
+      <div className="p-4 border-b border-slate-100 bg-slate-50/40">
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+          {/* Search bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search reviews..."
+              placeholder="Search by review text, ID, or summary..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-[#e2e8f0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/20 focus:border-[#3b82f6]"
+              className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-900 placeholder-slate-400"
             />
           </div>
 
-          {/* Filters */}
-          <div className="flex gap-2 items-center">
-            <Filter className="w-4 h-4 text-[#94a3b8]" />
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <span>Filters:</span>
+            </div>
+
             <select
               value={filterProduct}
-              onChange={(e) => handleFilterChange(setFilterProduct, e.target.value)}
-              className="text-sm border border-[#e2e8f0] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/20"
+              onChange={(e) => {
+                setFilterProduct(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
             >
-              <option value="all">All Products</option>
+              <option value="all">All Products ({products.length})</option>
               {products.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -191,8 +209,11 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
 
             <select
               value={filterSentiment}
-              onChange={(e) => handleFilterChange(setFilterSentiment, e.target.value)}
-              className="text-sm border border-[#e2e8f0] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/20"
+              onChange={(e) => {
+                setFilterSentiment(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
             >
               <option value="all">All Sentiments</option>
               <option value="positive">Positive</option>
@@ -202,8 +223,11 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
 
             <select
               value={filterTopic}
-              onChange={(e) => handleFilterChange(setFilterTopic, e.target.value)}
-              className="text-sm border border-[#e2e8f0] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3b82f6]/20"
+              onChange={(e) => {
+                setFilterTopic(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
             >
               <option value="all">All Topics</option>
               <option value="quality">Quality</option>
@@ -214,284 +238,331 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
               <option value="size_fit">Size/Fit</option>
               <option value="other">Other</option>
             </select>
+
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 px-2 py-1.5 rounded-md hover:bg-slate-200/60 transition-colors font-medium"
+                title="Reset all filters"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Reviews Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-left text-xs text-slate-600">
           <thead>
-            <tr className="border-b border-[#e2e8f0] bg-[#f8fafc]">
-              <th className="text-left px-4 py-3 font-medium text-[#64748b]">ID</th>
-              <th className="text-left px-4 py-3 font-medium text-[#64748b]">Product</th>
-              <th className="text-left px-4 py-3 font-medium text-[#64748b]">Rating</th>
-              <th className="text-left px-4 py-3 font-medium text-[#64748b]">Sentiment</th>
-              <th className="text-left px-4 py-3 font-medium text-[#64748b]">Topics</th>
-              <th className="text-left px-4 py-3 font-medium text-[#64748b]">Summary</th>
-              <th className="text-left px-4 py-3 font-medium text-[#64748b]">Actions</th>
+            <tr className="border-b border-slate-200/80 bg-slate-50/60 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+              <th className="px-4 py-3">ID</th>
+              <th className="px-4 py-3">Product</th>
+              <th className="px-4 py-3">Rating</th>
+              <th className="px-4 py-3">Sentiment</th>
+              <th className="px-4 py-3">Topics</th>
+              <th className="px-4 py-3">AI English Summary</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {paginatedReviews.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-[#94a3b8]">
-                  No reviews match your filters
+                <td colSpan={7} className="text-center py-12 text-slate-400">
+                  <p className="font-medium text-sm text-slate-600">No reviews found</p>
+                  <p className="text-xs text-slate-400 mt-1">Try clearing or adjusting your search filters.</p>
                 </td>
               </tr>
             ) : (
-              paginatedReviews.map((review) => (
-                <tr
-                  key={review.reviewId}
-                  className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-[#64748b]">{review.reviewId}</span>
-                    {review.ratingMismatch && (
-                      <span title="Rating-sentiment mismatch">
-                        <AlertTriangle className="w-3.5 h-3.5 text-[#f59e0b] ml-1 inline-block" />
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[#1e293b] max-w-[150px] truncate">
-                    {review.product}
-                  </td>
-                  <td className="px-4 py-3">
-                    {review.rating !== null ? (
-                      <span className="text-[#1e293b]">{'⭐'.repeat(review.rating)}</span>
-                    ) : (
-                      <span className="text-[#94a3b8] text-xs">Unknown</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {review.analysis ? (
-                      <span
-                        className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                          SENTIMENT_STYLES[review.analysis.sentiment]
-                        }`}
-                      >
-                        {review.analysis.sentiment}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-[#94a3b8]">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {review.analysis?.topics.map((topic) => (
-                        <span
-                          key={topic}
-                          className="inline-flex px-1.5 py-0.5 bg-[#f1f5f9] text-[#475569] rounded text-xs"
-                        >
-                          {topic.replace('_', '/')}
+              paginatedReviews.map((review) => {
+                const sentimentStyle = review.analysis
+                  ? SENTIMENT_STYLES[review.analysis.sentiment]
+                  : null;
+
+                return (
+                  <tr
+                    key={review.reviewId}
+                    className="hover:bg-slate-50/70 transition-colors group"
+                  >
+                    {/* ID & Mismatch Alert */}
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
+                          {review.reviewId}
                         </span>
-                      )) || <span className="text-xs text-[#94a3b8]">—</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-[#475569] max-w-[250px] truncate">
-                    {review.analysis?.summary || (
-                      <span className="text-[#94a3b8] italic">Analysis failed</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setSelectedReview(review)}
-                        className="p-1.5 rounded-lg hover:bg-[#f1f5f9] text-[#64748b] hover:text-[#1e293b] transition-colors"
-                        title="View details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      {review.analysis?.needs_reply && (
-                        <button
-                          onClick={() => handleGenerateReply(review)}
-                          disabled={replyStates[review.reviewId]?.loading}
-                          className="p-1.5 rounded-lg hover:bg-[#7c3aed]/10 text-[#7c3aed] transition-colors disabled:opacity-50"
-                          title="Generate AI reply"
-                        >
-                          {replyStates[review.reviewId]?.loading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <MessageSquare className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Reply display */}
-                    {replyStates[review.reviewId]?.reply && (
-                      <div className="mt-2 p-3 bg-[#7c3aed]/5 border border-[#7c3aed]/20 rounded-lg">
-                        <p className="text-xs text-[#475569] whitespace-pre-wrap">
-                          {replyStates[review.reviewId].reply}
-                        </p>
-                        <button
-                          onClick={() =>
-                            handleCopyReply(
-                              review.reviewId,
-                              replyStates[review.reviewId].reply!
-                            )
-                          }
-                          className="mt-2 flex items-center gap-1 text-xs text-[#7c3aed] hover:text-[#6d28d9]"
-                        >
-                          {replyStates[review.reviewId].copied ? (
-                            <>
-                              <Check className="w-3 h-3" />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" />
-                              Copy reply
-                            </>
-                          )}
-                        </button>
+                        {review.ratingMismatch && (
+                          <span
+                            title="Rating mismatch: Customer star rating contradicts negative AI sentiment (e.g. 5 stars on broken product)"
+                            className="inline-flex items-center justify-center p-1 rounded bg-amber-50 text-amber-600 border border-amber-200"
+                          >
+                            <AlertTriangle className="w-3 h-3" />
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </td>
 
-                    {replyStates[review.reviewId]?.error && (
-                      <p className="mt-2 text-xs text-red-500">
-                        {replyStates[review.reviewId].error}
+                    {/* Product */}
+                    <td className="px-4 py-3.5 font-medium text-slate-900 max-w-[160px] truncate">
+                      {review.product}
+                    </td>
+
+                    {/* Star Rating */}
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      {review.rating !== null ? (
+                        <div className="flex items-center gap-0.5 text-amber-400">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < review.rating! ? 'fill-amber-400' : 'text-slate-200'
+                              }`}
+                            />
+                          ))}
+                          <span className="text-[11px] font-bold text-slate-700 ml-1">
+                            {review.rating}/5
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                          Unknown
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Sentiment Badge */}
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      {review.analysis && sentimentStyle ? (
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize border ${sentimentStyle.badge}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${sentimentStyle.dot}`} />
+                          {review.analysis.sentiment}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">Failed</span>
+                      )}
+                    </td>
+
+                    {/* Topics */}
+                    <td className="px-4 py-3.5">
+                      <div className="flex flex-wrap gap-1 max-w-[180px]">
+                        {review.analysis?.topics.map((t) => (
+                          <span
+                            key={t}
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60"
+                          >
+                            {t.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+
+                    {/* AI English Summary */}
+                    <td className="px-4 py-3.5 max-w-[260px]">
+                      <p className="text-slate-800 line-clamp-2 leading-relaxed">
+                        {review.analysis?.summary || (
+                          <span className="text-slate-400 italic">Analysis unavailable</span>
+                        )}
                       </p>
-                    )}
-                  </td>
-                </tr>
-              ))
+                    </td>
+
+                    {/* Action buttons */}
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setSelectedReview(review)}
+                          className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                          title="Inspect raw review and analysis"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+
+                        {review.analysis?.needs_reply && (
+                          <button
+                            onClick={() => handleGenerateReply(review)}
+                            disabled={replyStates[review.reviewId]?.loading}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-violet-50 hover:bg-violet-100 text-violet-700 text-[11px] font-semibold border border-violet-200 transition-colors disabled:opacity-50"
+                            title="Generate AI suggested customer support reply"
+                          >
+                            {replyStates[review.reviewId]?.loading ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-violet-600" />
+                            ) : (
+                              <Sparkles className="w-3 h-3 text-violet-600" />
+                            )}
+                            <span>Suggest Reply</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Generated Reply Drawer */}
+                      {replyStates[review.reviewId]?.reply && (
+                        <div className="mt-2 text-left p-3 rounded-lg bg-violet-50/60 border border-violet-200/80 text-xs space-y-2">
+                          <div className="flex items-center justify-between text-violet-800 font-semibold text-[11px]">
+                            <span className="flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-violet-600" />
+                              AI Drafted Response
+                            </span>
+                            <button
+                              onClick={() =>
+                                handleCopyReply(
+                                  review.reviewId,
+                                  replyStates[review.reviewId].reply!
+                                )
+                              }
+                              className="text-violet-700 hover:text-violet-900 flex items-center gap-1 text-[11px] font-semibold"
+                            >
+                              {replyStates[review.reviewId].copied ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <p className="text-slate-700 leading-relaxed italic bg-white p-2.5 rounded border border-violet-100 text-[11px]">
+                            &quot;{replyStates[review.reviewId].reply}&quot;
+                          </p>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-[#e2e8f0]">
-          <p className="text-sm text-[#64748b]">
-            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
-            {Math.min(currentPage * ITEMS_PER_PAGE, filteredReviews.length)} of{' '}
-            {filteredReviews.length}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="p-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-sm text-[#64748b]">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc] disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+      {/* Pagination Footer */}
+      <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <div>
+          Showing{' '}
+          <span className="font-semibold text-slate-800">
+            {filteredReviews.length === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}
+          </span>{' '}
+          to{' '}
+          <span className="font-semibold text-slate-800">
+            {Math.min(currentPage * ITEMS_PER_PAGE, filteredReviews.length)}
+          </span>{' '}
+          of <span className="font-semibold text-slate-800">{filteredReviews.length}</span> reviews
         </div>
-      )}
 
-      {/* Review Detail Modal */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="p-1.5 rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="font-semibold text-slate-800">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="p-1.5 rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Review Detail Inspection Modal */}
       {selectedReview && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-[#e2e8f0]">
-              <h3 className="font-semibold text-[#1e293b]">
-                Review {selectedReview.reviewId}
-              </h3>
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-900">
+                  {selectedReview.reviewId}
+                </span>
+                <span className="text-sm font-semibold text-slate-900">
+                  {selectedReview.product}
+                </span>
+              </div>
               <button
                 onClick={() => setSelectedReview(null)}
-                className="p-1 rounded-lg hover:bg-[#f1f5f9]"
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
               >
-                <X className="w-5 h-5 text-[#64748b]" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              {/* Product & Rating */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="text-xs text-[#64748b]">Product</p>
-                  <p className="font-medium text-[#1e293b]">{selectedReview.product}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-[#64748b]">Rating</p>
-                  <p className="font-medium text-[#1e293b]">
-                    {selectedReview.rating !== null
-                      ? `${'⭐'.repeat(selectedReview.rating)} (${selectedReview.rating}/5)`
-                      : 'Unknown'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-[#64748b]">Date</p>
-                  <p className="font-medium text-[#1e293b]">{selectedReview.date}</p>
-                </div>
+            {/* Meta details */}
+            <div className="grid grid-cols-3 gap-2 py-2 text-xs">
+              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                <p className="text-slate-400 font-medium text-[10px]">Date</p>
+                <p className="font-semibold text-slate-800 mt-0.5">{selectedReview.date}</p>
               </div>
+              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                <p className="text-slate-400 font-medium text-[10px]">Customer Rating</p>
+                <p className="font-semibold text-slate-800 mt-0.5">
+                  {selectedReview.rating !== null ? `${selectedReview.rating} / 5 Stars` : 'Unknown'}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                <p className="text-slate-400 font-medium text-[10px]">Needs Reply</p>
+                <p className="font-semibold text-slate-800 mt-0.5">
+                  {selectedReview.analysis?.needs_reply ? 'Yes (Action Required)' : 'No'}
+                </p>
+              </div>
+            </div>
 
-              {/* Original Review */}
+            {/* Raw Text vs AI Summary */}
+            <div className="space-y-3 text-xs">
               <div>
-                <p className="text-xs text-[#64748b] mb-1">Original Review</p>
-                <div className="p-3 bg-[#f8fafc] rounded-lg border border-[#e2e8f0]">
-                  <p className="text-sm text-[#475569]">{selectedReview.reviewText}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  Customer Input (Escaped & Sanitized)
+                </p>
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80 font-mono text-slate-800 break-words leading-relaxed">
+                  {selectedReview.reviewText}
                 </div>
               </div>
 
-              {/* AI Analysis */}
-              {selectedReview.analysis ? (
+              {selectedReview.analysis && (
                 <div>
-                  <p className="text-xs text-[#64748b] mb-1">AI Analysis</p>
-                  <div className="p-3 bg-[#f8fafc] rounded-lg border border-[#e2e8f0] space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    AI Analysis Result
+                  </p>
+                  <div className="p-3 rounded-lg bg-indigo-50/40 border border-indigo-100 text-slate-800 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#64748b]">Sentiment:</span>
-                      <span
-                        className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                          SENTIMENT_STYLES[selectedReview.analysis.sentiment]
-                        }`}
-                      >
+                      <span className="font-semibold text-slate-700">Sentiment:</span>
+                      <span className="font-bold text-slate-900 capitalize">
                         {selectedReview.analysis.sentiment}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-[#64748b]">Topics:</span>
-                      {selectedReview.analysis.topics.map((t) => (
-                        <span
-                          key={t}
-                          className="inline-flex px-1.5 py-0.5 bg-[#e2e8f0] text-[#475569] rounded text-xs"
-                        >
-                          {t.replace('_', '/')}
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-700">Topics:</span>
+                      <span className="text-slate-800">
+                        {selectedReview.analysis.topics.join(', ')}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-xs text-[#64748b]">Summary: </span>
-                      <span className="text-sm text-[#1e293b]">
+                      <span className="font-semibold text-slate-700">English Summary:</span>
+                      <p className="mt-0.5 text-slate-900 font-medium">
                         {selectedReview.analysis.summary}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-[#64748b]">Needs Reply: </span>
-                      <span className="text-sm text-[#1e293b]">
-                        {selectedReview.analysis.needs_reply ? 'Yes' : 'No'}
-                      </span>
+                      </p>
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                  <p className="text-sm text-red-600">Analysis failed for this review</p>
-                </div>
               )}
+            </div>
 
-              {/* Rating Mismatch Warning */}
-              {selectedReview.ratingMismatch && (
-                <div className="flex items-center gap-2 p-3 bg-[#f59e0b]/10 rounded-lg border border-[#f59e0b]/30">
-                  <AlertTriangle className="w-4 h-4 text-[#f59e0b]" />
-                  <p className="text-sm text-[#92400e]">
-                    Rating-sentiment mismatch detected: the star rating doesn&apos;t match the
-                    review content.
-                  </p>
-                </div>
-              )}
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setSelectedReview(null)}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
