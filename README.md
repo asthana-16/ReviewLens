@@ -1,5 +1,11 @@
 # ReviewLens – AI-Powered Review Intelligence Dashboard
 
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Live%20Demo-black?logo=vercel&style=for-the-badge)](https://reviewlens-app.vercel.app/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=next.js&style=for-the-badge)](https://nextjs.org/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-AI%20Inference-4285F4?logo=google&style=for-the-badge)](https://ai.google.dev/)
+
+🚀 **Live Production URL:** [https://reviewlens-app.vercel.app](https://reviewlens-app.vercel.app)
+
 ReviewLens is a production-ready AI SaaS dashboard designed for online store owners. Store owners frequently receive hundreds of customer reviews and don't have time to read them individually. ReviewLens ingests raw, messy review data, filters noise, protects against prompt injection, runs structured AI inference with persistent SQLite caching, and surfaces actionable customer insights in a single screen.
 
 ---
