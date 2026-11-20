@@ -58,7 +58,17 @@ export default function UploadSection({
         body: formData,
       });
 
-      const result = await response.json();
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch {
+        throw new Error(
+          response.ok
+            ? 'Server returned an invalid response format.'
+            : `Server error (${response.status}): ${text || response.statusText || 'Connection closed unexpectedly. Please restart the dev server with npm run dev.'}`
+        );
+      }
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Upload processing failed');

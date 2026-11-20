@@ -21,9 +21,9 @@ export async function POST(request) {
     const formData = await request.formData();
     const file = formData.get('file');
 
-    if (!file) {
+    if (!file || typeof file === 'string' || typeof file.text !== 'function') {
       return NextResponse.json(
-        { success: false, error: 'No file uploaded' },
+        { success: false, error: 'No valid file uploaded' },
         { status: 400 }
       );
     }
