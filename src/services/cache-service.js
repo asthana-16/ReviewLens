@@ -1,9 +1,22 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
 function getDbPath() {
   if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
     return path.join(process.cwd(), 'reviewlens.test.db');
+  }
+  if (process.env.VERCEL) {
+    const tmpDb = '/tmp/reviewlens.db';
+    const rootDb = path.join(process.cwd(), 'reviewlens.db');
+    if (!fs.existsSync(tmpDb) && fs.existsSync(rootDb)) {
+      try {
+        fs.copyFileSync(rootDb, tmpDb);
+      } catch (e) {
+        console.warn('Could not copy initial db to /tmp:', e);
+      }
+    }
+    return tmpDb;
   }
   return path.join(process.cwd(), 'reviewlens.db');
 }
