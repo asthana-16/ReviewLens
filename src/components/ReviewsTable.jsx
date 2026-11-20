@@ -35,7 +35,7 @@ const SENTIMENT_STYLES = {
   },
 };
 
-export default function ReviewsTable({ reviews, onReviewUpdate }) {
+export default function ReviewsTable({ reviews, onReviewUpdate, datasetId }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProduct, setFilterProduct] = useState('all');
   const [filterSentiment, setFilterSentiment] = useState('all');
@@ -58,6 +58,7 @@ export default function ReviewsTable({ reviews, onReviewUpdate }) {
           date: review.date,
           reviewText: review.reviewText,
           textHash: review.textHash,
+          datasetId,
         }),
       });
 

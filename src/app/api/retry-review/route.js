@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { analyseReview } from '@/services/ai-service';
-import { saveAnalysis } from '@/services/cache-service';
+import { saveAnalysis, updateReviewInDataset } from '@/services/cache-service';
 
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { reviewId, product, rating, date, reviewText, textHash } = body;
+    const { reviewId, product, rating, date, reviewText, textHash, datasetId } = body;
 
     if (!reviewText || !textHash) {
       return NextResponse.json(
@@ -61,6 +61,13 @@ export async function POST(request) {
       isCached: false,
       ratingMismatch,
     };
+
+    if (datasetId) {
+      updateReviewInDataset(datasetId, reviewId, {
+        analysis,
+        ratingMismatch,
+      });
+    }
 
     return NextResponse.json({
       success: true,

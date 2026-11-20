@@ -1,7 +1,9 @@
+import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { parseCSV, cleanReviews } from '@/services/csv-service';
 import { processReviews } from '@/services/batch-service';
 import { aggregateAnalytics } from '@/services/analytics-service';
+import { saveDataset, saveDatasetReviews } from '@/services/cache-service';
 
 // Allow up to 60 seconds execution time on Vercel Hobby serverless functions
 export const maxDuration = 60;
@@ -48,6 +50,8 @@ export async function POST(request) {
       );
     }
 
+    const filename = (file.name || 'uploaded_reviews.csv').trim();
+
     // Read file content
     const csvContent = await file.text();
 
@@ -75,6 +79,10 @@ export async function POST(request) {
       );
     }
 
+    // Generate unique dataset ID for complete dataset isolation
+    const datasetId = `ds_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const uploadTimestamp = new Date().toISOString();
+
     // Step 2: Clean and deduplicate
     const { cleaned, skipped, duplicateCount } = cleanReviews(rawReviews);
 
@@ -88,10 +96,36 @@ export async function POST(request) {
     // Step 4: Aggregate analytics
     const dashboardData = aggregateAnalytics(analysed, stats);
 
+    // Step 5: Persist isolated dataset and reviews in SQLite
+    saveDataset({
+      id: datasetId,
+      filename,
+      totalUploaded: stats.totalUploaded,
+      totalProcessed: stats.totalProcessed,
+      cacheHits: stats.cacheHits,
+      aiCalls: stats.aiCalls,
+      failed: stats.failed,
+      skipped: stats.skipped,
+      duplicates: stats.duplicates,
+      durationMs: stats.durationMs,
+      createdAt: uploadTimestamp,
+      summaryJson: dashboardData.summary,
+    });
+
+    saveDatasetReviews(datasetId, analysed);
+
     return NextResponse.json({
       success: true,
       message: `Processed ${stats.totalProcessed} reviews (${stats.cacheHits} cached, ${stats.aiCalls} AI calls, ${stats.failed} failed, ${stats.skipped} skipped, ${stats.duplicates} duplicates)`,
-      data: dashboardData,
+      datasetId,
+      data: {
+        ...dashboardData,
+        dataset: {
+          id: datasetId,
+          filename,
+          createdAt: uploadTimestamp,
+        },
+      },
     });
   } catch (error) {
     console.error('Upload processing error:', error);
