@@ -1,13 +1,8 @@
 'use client';
 
 import { Activity, Clock, Cpu, Database, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
-import type { ProcessingStats as ProcessingStatsType } from '@/types';
 
-interface ProcessingStatsProps {
-  stats: ProcessingStatsType;
-}
-
-export default function ProcessingStats({ stats }: ProcessingStatsProps) {
+export default function ProcessingStats({ stats }) {
   const cacheHitRate =
     stats.totalProcessed > 0
       ? Math.round((stats.cacheHits / stats.totalProcessed) * 100)

@@ -114,13 +114,13 @@ Adversarial reviews like `R012` attempt to hijack the model's instructions:
 
 ## Tech Stack
 
-- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16 (App Router), React 19, JavaScript (ESM / JSX), Tailwind CSS
 - **Icons**: Lucide React
 - **Data Visualization**: Recharts
 - **CSV Ingestion**: PapaParse
 - **Validation**: Zod
 - **Database / Cache**: SQLite via `better-sqlite3` (with WAL mode enabled)
-- **AI Engine**: Google Gemini API (`@google/generative-ai`, model: `gemini-2.0-flash`)
+- **AI Engine**: Google Gemini API (`@google/generative-ai`, model cascade: `gemini-flash-latest`, `gemini-3.1-flash-lite`)
 - **Testing**: Vitest
 
 ---

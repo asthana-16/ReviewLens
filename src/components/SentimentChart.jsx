@@ -3,16 +3,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChart as PieIcon, ShieldCheck } from 'lucide-react';
 
-interface SentimentChartProps {
-  summary: {
-    total: number;
-    positivePercent: number;
-    neutralPercent: number;
-    negativePercent: number;
-    ratingAgreementPercent: number;
-  };
-}
-
 const SENTIMENT_CONFIG = [
   {
     name: 'Positive',
@@ -37,10 +27,10 @@ const SENTIMENT_CONFIG = [
   },
 ];
 
-export default function SentimentChart({ summary }: SentimentChartProps) {
+export default function SentimentChart({ summary }) {
   const chartData = SENTIMENT_CONFIG.map((cfg) => ({
     name: cfg.name,
-    value: summary[cfg.key as keyof typeof summary] as number,
+    value: summary[cfg.key] || 0,
     color: cfg.color,
   })).filter((d) => d.value > 0);
 
@@ -111,7 +101,7 @@ export default function SentimentChart({ summary }: SentimentChartProps) {
         {/* Legend Breakdown */}
         <div className="space-y-3">
           {SENTIMENT_CONFIG.map((cfg) => {
-            const val = summary[cfg.key as keyof typeof summary] as number;
+            const val = summary[cfg.key] || 0;
             return (
               <div key={cfg.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">

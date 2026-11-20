@@ -5,7 +5,6 @@ import {
   analyseWithRetry,
   processReviews,
 } from '@/services/batch-service';
-import type { CleanedReview } from '@/types';
 
 describe('Batch Processing and Rate Limit Retry Service', () => {
   it('correctly identifies retryable HTTP 429 and 5xx server errors', () => {
@@ -26,9 +25,6 @@ describe('Batch Processing and Rate Limit Retry Service', () => {
     const delay1 = getBackoffDelay(1, 100);
     const delay2 = getBackoffDelay(2, 100);
 
-    // Base delays: 100 * 2^0 = 100 (+ jitter up to 250)
-    // 100 * 2^1 = 200 (+ jitter)
-    // 100 * 2^2 = 400 (+ jitter)
     expect(delay0).toBeGreaterThanOrEqual(100);
     expect(delay1).toBeGreaterThan(delay0 - 250);
     expect(delay2).toBeGreaterThanOrEqual(400);
@@ -56,7 +52,7 @@ describe('Batch Processing and Rate Limit Retry Service', () => {
   });
 
   it('detects rating and sentiment mismatches (e.g. 5 stars with negative review R008)', async () => {
-    const reviews: CleanedReview[] = [
+    const reviews = [
       {
         reviewId: 'R008',
         product: 'Ceramic Coffee Mug',
@@ -77,7 +73,7 @@ describe('Batch Processing and Rate Limit Retry Service', () => {
       },
     ];
 
-    const mockCaller = async (text: string) => {
+    const mockCaller = async (text) => {
       if (text.includes('Terrible')) {
         return JSON.stringify({
           sentiment: 'negative',

@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { parseAndValidateAIResponse } from '@/lib/validators';
-import type { AIAnalysis } from '@/types';
 
 /**
  * System prompt designed to resist prompt injection and enforce strict schema output.
@@ -45,12 +44,9 @@ const MODEL_CANDIDATES = [
 /**
  * Calls Google Gemini using the primary model with automatic fallback.
  */
-async function analyseWithGemini(
-  reviewText: string,
-  apiKey: string
-): Promise<string> {
+async function analyseWithGemini(reviewText, apiKey) {
   const genAI = new GoogleGenerativeAI(apiKey);
-  let lastError: Error | null = null;
+  let lastError = null;
 
   for (const modelName of MODEL_CANDIDATES) {
     try {
@@ -82,7 +78,7 @@ Analyse the review above. Return ONLY the JSON object.`,
       });
 
       return result.response.text();
-    } catch (err: unknown) {
+    } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       lastError = error;
       const msg = error.message.toLowerCase();
@@ -110,12 +106,8 @@ Analyse the review above. Return ONLY the JSON object.`,
 /**
  * Analyses a review with one retry on schema validation failure.
  */
-export async function analyseReview(
-  reviewText: string,
-  apiKey: string,
-  customCaller?: (text: string) => Promise<string>
-): Promise<AIAnalysis | null> {
-  const callAPI = customCaller || ((text: string) => analyseWithGemini(text, apiKey));
+export async function analyseReview(reviewText, apiKey, customCaller) {
+  const callAPI = customCaller || ((text) => analyseWithGemini(text, apiKey));
 
   // Attempt 1
   const raw1 = await callAPI(reviewText);
@@ -145,12 +137,7 @@ export async function analyseReview(
 /**
  * Generates a suggested reply for a review that needs a response.
  */
-export async function generateReply(
-  reviewText: string,
-  summary: string,
-  apiKey: string,
-  customCaller?: (prompt: string) => Promise<string>
-): Promise<string | null> {
+export async function generateReply(reviewText, summary, apiKey, customCaller) {
   const prompt = `You are a customer support agent for an online store. Write a polite, empathetic reply to this customer review.
 
 RULES:
@@ -192,7 +179,7 @@ Write the reply:`;
       });
 
       return result.response.text().trim();
-    } catch (err: unknown) {
+    } catch (err) {
       console.warn(`generateReply model ${modelName} error, trying fallback...`, err);
     }
   }

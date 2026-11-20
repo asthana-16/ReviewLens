@@ -1,8 +1,7 @@
 import { z } from 'zod';
-import type { AIAnalysis, Sentiment, Topic } from '@/types';
 
-const VALID_SENTIMENTS: Sentiment[] = ['positive', 'neutral', 'negative'];
-const VALID_TOPICS: Topic[] = [
+const VALID_SENTIMENTS = ['positive', 'neutral', 'negative'];
+const VALID_TOPICS = [
   'quality',
   'delivery',
   'price',
@@ -12,7 +11,7 @@ const VALID_TOPICS: Topic[] = [
   'other',
 ];
 
-const TOPIC_SYNONYM_MAP: Record<string, Topic> = {
+const TOPIC_SYNONYM_MAP = {
   value: 'price',
   cost: 'price',
   pricing: 'price',
@@ -46,17 +45,17 @@ const TOPIC_SYNONYM_MAP: Record<string, Topic> = {
  * Normalizes an array of raw topic strings to strictly valid Topic types.
  * Returns null if topics is empty or contains an unrecognizable topic.
  */
-function normalizeTopics(rawTopics: unknown): Topic[] | null {
+function normalizeTopics(rawTopics) {
   if (!Array.isArray(rawTopics) || rawTopics.length === 0) return null;
 
-  const normalized: Topic[] = [];
+  const normalized = [];
 
   for (const item of rawTopics) {
     if (typeof item !== 'string') return null;
     const clean = item.trim().toLowerCase().replace(/[\s-]/g, '_');
 
-    if (VALID_TOPICS.includes(clean as Topic)) {
-      if (!normalized.includes(clean as Topic)) normalized.push(clean as Topic);
+    if (VALID_TOPICS.includes(clean)) {
+      if (!normalized.includes(clean)) normalized.push(clean);
     } else if (TOPIC_SYNONYM_MAP[clean]) {
       const mapped = TOPIC_SYNONYM_MAP[clean];
       if (!normalized.includes(mapped)) normalized.push(mapped);
@@ -85,10 +84,10 @@ export const aiAnalysisSchema = z.object({
  * Validates an AI analysis response against the expected schema.
  * Returns the validated data or null if invalid.
  */
-export function validateAIResponse(data: unknown): AIAnalysis | null {
+export function validateAIResponse(data) {
   if (!data || typeof data !== 'object') return null;
 
-  const rawObj = data as Record<string, unknown>;
+  const rawObj = data;
   const normalizedTopics = normalizeTopics(rawObj.topics);
   if (!normalizedTopics) return null;
 
@@ -112,7 +111,7 @@ export function validateAIResponse(data: unknown): AIAnalysis | null {
  * Robustly parses a JSON string from the AI and validates it against the Zod schema.
  * Handles conversational wrappers, markdown fences, and leading/trailing whitespace.
  */
-export function parseAndValidateAIResponse(raw: string): AIAnalysis | null {
+export function parseAndValidateAIResponse(raw) {
   try {
     let cleaned = raw.trim();
 

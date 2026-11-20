@@ -12,26 +12,19 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
-import type { DashboardData } from '@/types';
-
-interface UploadSectionProps {
-  onUploadComplete: (data: DashboardData) => void;
-  isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
-}
 
 export default function UploadSection({
   onUploadComplete,
   isLoading,
   setIsLoading,
-}: UploadSectionProps) {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+}) {
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef(null);
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = (file) => {
     setError(null);
     setSuccess(null);
 
@@ -48,7 +41,7 @@ export default function UploadSection({
     setSelectedFile(file);
   };
 
-  const handleUpload = async (fileToUpload?: File) => {
+  const handleUpload = async (fileToUpload) => {
     const targetFile = fileToUpload || selectedFile;
     if (!targetFile) return;
 

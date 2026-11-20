@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { parseCSV, cleanReviews } from '@/services/csv-service';
 import { processReviews } from '@/services/batch-service';
 import { aggregateAnalytics } from '@/services/analytics-service';
@@ -6,7 +6,7 @@ import { aggregateAnalytics } from '@/services/analytics-service';
 // Maximum upload size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     // Check API key is configured
     const apiKey = process.env.GEMINI_API_KEY;
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // Parse the form data
     const formData = await request.formData();
-    const file = formData.get('file') as File | null;
+    const file = formData.get('file');
 
     if (!file) {
       return NextResponse.json(

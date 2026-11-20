@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import type { DashboardData, AnalysedReview } from '@/types';
 import { aggregateAnalytics } from '@/services/analytics-service';
 import Sidebar from '@/components/Sidebar';
 import UploadSection from '@/components/UploadSection';
@@ -20,11 +19,11 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('dashboard');
+  const [activeSection, setActiveSection] = useState('dashboard');
 
-  const handleUploadComplete = (dashboardData: DashboardData) => {
+  const handleUploadComplete = (dashboardData) => {
     setData(dashboardData);
     setActiveSection('dashboard');
   };
@@ -34,7 +33,7 @@ export default function Home() {
     setActiveSection('dashboard');
   };
 
-  const handleReviewUpdate = (updatedReview: AnalysedReview) => {
+  const handleReviewUpdate = (updatedReview) => {
     setData((prev) => {
       if (!prev) return null;
       const newReviews = prev.reviews.map((r) =>
@@ -241,7 +240,7 @@ export default function Home() {
 
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
                     <p className="font-bold text-slate-900">Model Configuration</p>
-                    <p>Google Gemini 2.0 Flash with temperature set to 0.1 for deterministic, factual outputs.</p>
+                    <p>Google Gemini with temperature set to 0.1 for deterministic, factual outputs.</p>
                   </div>
                 </div>
               </div>

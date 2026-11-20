@@ -1,5 +1,3 @@
-import type { AnalysedReview, DashboardData, ProcessingStats, ProductAnalytics } from '@/types';
-
 /**
  * Aggregates analytics from analysed reviews.
  * Computes summary statistics, top complaints, top praises,
@@ -9,10 +7,7 @@ import type { AnalysedReview, DashboardData, ProcessingStats, ProductAnalytics }
  * Failed or skipped reviews must NEVER be treated as negative.
  * Sentiment percentages and feedback are calculated strictly from completed analyses.
  */
-export function aggregateAnalytics(
-  reviews: AnalysedReview[],
-  stats: ProcessingStats
-): DashboardData {
+export function aggregateAnalytics(reviews, stats) {
   // Only completed reviews with valid AI analysis contribute to sentiment analytics
   const completedReviews = reviews.filter(
     (r) => r.analysisStatus === 'completed' && r.analysis !== null
@@ -25,8 +20,8 @@ export function aggregateAnalytics(
   let needsReply = 0;
 
   // Collect summaries by sentiment for top complaints/praises
-  const complaints: string[] = [];
-  const praises: string[] = [];
+  const complaints = [];
+  const praises = [];
 
   // Track rating-sentiment agreement
   let ratingComparisons = 0;
@@ -48,7 +43,7 @@ export function aggregateAnalytics(
     }
 
     // Rating agreement check
-    if (review.rating !== null) {
+    if (review.rating !== null && review.rating !== undefined) {
       ratingComparisons++;
       const rating = review.rating;
       const sentiment = review.analysis.sentiment;
@@ -63,10 +58,7 @@ export function aggregateAnalytics(
   }
 
   // Build per-product analytics
-  const productMap = new Map<
-    string,
-    { total: number; positive: number; neutral: number; negative: number; issues: string[] }
-  >();
+  const productMap = new Map();
 
   for (const review of completedReviews) {
     if (!review.analysis) continue;
@@ -81,7 +73,7 @@ export function aggregateAnalytics(
       });
     }
 
-    const product = productMap.get(review.product)!;
+    const product = productMap.get(review.product);
     product.total++;
     product[review.analysis.sentiment]++;
 
@@ -90,7 +82,7 @@ export function aggregateAnalytics(
     }
   }
 
-  const productAnalytics: ProductAnalytics[] = Array.from(productMap.entries()).map(
+  const productAnalytics = Array.from(productMap.entries()).map(
     ([product, data]) => ({
       product,
       ...data,

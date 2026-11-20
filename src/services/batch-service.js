@@ -1,6 +1,5 @@
 import { analyseReview } from './ai-service';
 import { saveAnalysis, batchLookup } from './cache-service';
-import type { CleanedReview, AnalysedReview, AIAnalysis, ProcessingStats, AnalysisStatus } from '@/types';
 
 export const BATCH_SIZE = 5;
 export const MAX_RETRIES = 3;
@@ -9,14 +8,14 @@ export const BASE_DELAY_MS = 1000;
 /**
  * Delays execution for the specified milliseconds.
  */
-export function delay(ms: number): Promise<void> {
+export function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
  * Calculates exponential backoff delay with jitter.
  */
-export function getBackoffDelay(attempt: number, baseDelay = BASE_DELAY_MS): number {
+export function getBackoffDelay(attempt, baseDelay = BASE_DELAY_MS) {
   const exponential = baseDelay * Math.pow(2, attempt);
   const jitter = Math.random() * 250;
   return exponential + jitter;
@@ -25,7 +24,7 @@ export function getBackoffDelay(attempt: number, baseDelay = BASE_DELAY_MS): num
 /**
  * Checks if an error is retryable (rate limit HTTP 429 or temporary 5xx errors).
  */
-export function isRetryableError(error: unknown): boolean {
+export function isRetryableError(error) {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     return (
@@ -49,15 +48,11 @@ export function isRetryableError(error: unknown): boolean {
 /**
  * Analyses a single review with retry logic and exponential backoff for transient errors.
  */
-export async function analyseWithRetry(
-  reviewText: string,
-  apiKey: string,
-  customCaller?: (text: string) => Promise<string>
-): Promise<AIAnalysis | null> {
+export async function analyseWithRetry(reviewText, apiKey, customCaller) {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const result = await analyseReview(reviewText, apiKey, customCaller);
-      return result; // Could be null (schema invalid after 2 tries) or valid analysis
+      return result;
     } catch (error) {
       if (isRetryableError(error) && attempt < MAX_RETRIES - 1) {
         const backoffMs = getBackoffDelay(attempt);
@@ -76,26 +71,8 @@ export async function analyseWithRetry(
 
 /**
  * Processes reviews in batches with rate limit handling and caching.
- *
- * Flow:
- * 1. Filter out empty reviews (marked as 'skipped')
- * 2. Collect unique text hashes from valid reviews
- * 3. Check persistent SQLite cache
- * 4. Send uncached reviews to AI in batches of BATCH_SIZE
- * 5. Save new analyses to SQLite cache
- * 6. Map analyses back to all review instances with accurate statuses
  */
-export async function processReviews(
-  cleanedReviews: CleanedReview[],
-  apiKey: string,
-  options?: {
-    customCaller?: (text: string) => Promise<string>;
-    onProgress?: (processed: number, total: number) => void;
-  }
-): Promise<{
-  analysed: AnalysedReview[];
-  stats: ProcessingStats;
-}> {
+export async function processReviews(cleanedReviews, apiKey, options) {
   const startTime = Date.now();
   let aiCalls = 0;
   let failed = 0;
@@ -110,7 +87,7 @@ export async function processReviews(
 
   // Step 3: Identify reviews that need AI analysis
   const uncachedHashes = uniqueHashes.filter((h) => !cachedResults.has(h));
-  const hashToText = new Map<string, string>();
+  const hashToText = new Map();
   for (const review of validReviews) {
     if (uncachedHashes.includes(review.textHash) && !hashToText.has(review.textHash)) {
       hashToText.set(review.textHash, review.reviewText);
@@ -118,7 +95,7 @@ export async function processReviews(
   }
 
   // Step 4: Process uncached reviews in batches
-  const newAnalyses = new Map<string, AIAnalysis>();
+  const newAnalyses = new Map();
   const hashesToProcess = Array.from(hashToText.keys());
   const totalToProcess = hashesToProcess.length;
 
@@ -127,7 +104,7 @@ export async function processReviews(
 
     // Process reviews within the batch
     for (const hash of batch) {
-      const text = hashToText.get(hash)!;
+      const text = hashToText.get(hash);
       const analysis = await analyseWithRetry(text, apiKey, options?.customCaller);
 
       if (analysis) {
@@ -154,24 +131,24 @@ export async function processReviews(
   const allAnalyses = new Map([...cachedResults, ...newAnalyses]);
 
   // Step 6: Map analyses back to all review instances
-  const analysed: AnalysedReview[] = cleanedReviews.map((review) => {
+  const analysed = cleanedReviews.map((review) => {
     // Empty review: skipped, never failed
     if (review.status === 'empty') {
       return {
         ...review,
         analysis: null,
-        analysisStatus: 'skipped' as AnalysisStatus,
+        analysisStatus: 'skipped',
         isCached: false,
       };
     }
 
     const analysis = allAnalyses.get(review.textHash) || null;
     const isCached = cachedResults.has(review.textHash);
-    const status: AnalysisStatus = analysis ? 'completed' : 'failed';
+    const status = analysis ? 'completed' : 'failed';
 
     // Rating and sentiment mismatch detection
     let ratingMismatch = false;
-    if (analysis && review.rating !== null) {
+    if (analysis && review.rating !== null && review.rating !== undefined) {
       const isHighRating = review.rating >= 4;
       const isLowRating = review.rating <= 2;
       const isNegative = analysis.sentiment === 'negative';

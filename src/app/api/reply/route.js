@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { generateReply } from '@/services/ai-service';
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {

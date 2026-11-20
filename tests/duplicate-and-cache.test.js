@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { saveAnalysis, getCachedAnalysis, batchLookup } from '@/services/cache-service';
 import { hashText } from '@/services/csv-service';
-import type { AIAnalysis } from '@/types';
 
 describe('Duplicate Detection and Persistent SQLite Cache', () => {
-  const sampleAnalysis: AIAnalysis = {
+  const sampleAnalysis = {
     sentiment: 'negative',
     topics: ['quality'],
     summary: 'Left earbud stopped working after two days',
@@ -34,14 +33,14 @@ describe('Duplicate Detection and Persistent SQLite Cache', () => {
     const hashB = hashText(textB);
     const hashC = hashText(textC);
 
-    const analysisA: AIAnalysis = {
+    const analysisA = {
       sentiment: 'positive',
       topics: ['quality'],
       summary: 'High quality build',
       needs_reply: false,
     };
 
-    const analysisB: AIAnalysis = {
+    const analysisB = {
       sentiment: 'neutral',
       topics: ['price'],
       summary: 'Average value for money',

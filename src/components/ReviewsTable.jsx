@@ -17,12 +17,6 @@ import {
   RotateCcw,
   RefreshCw,
 } from 'lucide-react';
-import type { AnalysedReview, Topic } from '@/types';
-
-interface ReviewsTableProps {
-  reviews: AnalysedReview[];
-  onReviewUpdate?: (review: AnalysedReview) => void;
-}
 
 const ITEMS_PER_PAGE = 10;
 
@@ -41,19 +35,17 @@ const SENTIMENT_STYLES = {
   },
 };
 
-export default function ReviewsTable({ reviews, onReviewUpdate }: ReviewsTableProps) {
+export default function ReviewsTable({ reviews, onReviewUpdate }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterProduct, setFilterProduct] = useState<string>('all');
-  const [filterSentiment, setFilterSentiment] = useState<string>('all');
-  const [filterTopic, setFilterTopic] = useState<string>('all');
+  const [filterProduct, setFilterProduct] = useState('all');
+  const [filterSentiment, setFilterSentiment] = useState('all');
+  const [filterTopic, setFilterTopic] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [replyStates, setReplyStates] = useState<
-    Record<string, { loading: boolean; reply: string | null; error: string | null; copied: boolean }>
-  >({});
-  const [retryingReviews, setRetryingReviews] = useState<Record<string, boolean>>({});
-  const [selectedReview, setSelectedReview] = useState<AnalysedReview | null>(null);
+  const [replyStates, setReplyStates] = useState({});
+  const [retryingReviews, setRetryingReviews] = useState({});
+  const [selectedReview, setSelectedReview] = useState(null);
 
-  const handleRetryReview = async (review: AnalysedReview) => {
+  const handleRetryReview = async (review) => {
     setRetryingReviews((prev) => ({ ...prev, [review.reviewId]: true }));
     try {
       const response = await fetch('/api/retry-review', {
@@ -103,7 +95,7 @@ export default function ReviewsTable({ reviews, onReviewUpdate }: ReviewsTablePr
 
       if (
         filterTopic !== 'all' &&
-        !review.analysis?.topics.includes(filterTopic as Topic)
+        !review.analysis?.topics.includes(filterTopic)
       )
         return false;
 
@@ -135,7 +127,7 @@ export default function ReviewsTable({ reviews, onReviewUpdate }: ReviewsTablePr
     setCurrentPage(1);
   };
 
-  const handleGenerateReply = async (review: AnalysedReview) => {
+  const handleGenerateReply = async (review) => {
     if (!review.analysis) return;
 
     setReplyStates((prev) => ({
@@ -176,7 +168,7 @@ export default function ReviewsTable({ reviews, onReviewUpdate }: ReviewsTablePr
     }
   };
 
-  const handleCopyReply = async (reviewId: string, reply: string) => {
+  const handleCopyReply = async (reviewId, reply) => {
     await navigator.clipboard.writeText(reply);
     setReplyStates((prev) => ({
       ...prev,
@@ -349,7 +341,7 @@ export default function ReviewsTable({ reviews, onReviewUpdate }: ReviewsTablePr
                             <Star
                               key={i}
                               className={`w-3.5 h-3.5 ${
-                                i < review.rating! ? 'fill-amber-400' : 'text-slate-200'
+                                i < review.rating ? 'fill-amber-400' : 'text-slate-200'
                               }`}
                             />
                           ))}
@@ -481,7 +473,7 @@ export default function ReviewsTable({ reviews, onReviewUpdate }: ReviewsTablePr
                               onClick={() =>
                                 handleCopyReply(
                                   review.reviewId,
-                                  replyStates[review.reviewId].reply!
+                                  replyStates[review.reviewId].reply
                                 )
                               }
                               className="text-violet-700 hover:text-violet-900 flex items-center gap-1 text-[11px] font-semibold"

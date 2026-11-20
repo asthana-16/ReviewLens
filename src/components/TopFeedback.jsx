@@ -2,12 +2,7 @@
 
 import { ThumbsDown, ThumbsUp, AlertCircle, CheckCircle2, MessageSquare } from 'lucide-react';
 
-interface TopFeedbackProps {
-  complaints: string[];
-  praises: string[];
-}
-
-export default function TopFeedback({ complaints, praises }: TopFeedbackProps) {
+export default function TopFeedback({ complaints, praises }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between">
       {/* Header */}
@@ -34,7 +29,7 @@ export default function TopFeedback({ complaints, praises }: TopFeedbackProps) {
               <ThumbsDown className="w-3.5 h-3.5" />
               <span>Top Complaints</span>
             </div>
-            {complaints.length > 0 ? (
+            {complaints && complaints.length > 0 ? (
               <ul className="space-y-2">
                 {complaints.map((item, idx) => (
                   <li
@@ -63,7 +58,7 @@ export default function TopFeedback({ complaints, praises }: TopFeedbackProps) {
               <ThumbsUp className="w-3.5 h-3.5" />
               <span>Top Praises</span>
             </div>
-            {praises.length > 0 ? (
+            {praises && praises.length > 0 ? (
               <ul className="space-y-2">
                 {praises.map((item, idx) => (
                   <li

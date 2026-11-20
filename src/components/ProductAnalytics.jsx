@@ -1,13 +1,8 @@
 'use client';
 
 import { Package, AlertCircle, ThumbsUp, ThumbsDown, Minus, Sparkles } from 'lucide-react';
-import type { ProductAnalytics as ProductAnalyticsType } from '@/types';
 
-interface ProductAnalyticsProps {
-  products: ProductAnalyticsType[];
-}
-
-export default function ProductAnalytics({ products }: ProductAnalyticsProps) {
+export default function ProductAnalytics({ products }) {
   if (!products || products.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-500 max-w-lg mx-auto shadow-sm">

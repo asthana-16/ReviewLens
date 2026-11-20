@@ -1,21 +1,20 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import type { AIAnalysis } from '@/types';
 
-function getDbPath(): string {
+function getDbPath() {
   if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
     return path.join(process.cwd(), 'reviewlens.test.db');
   }
   return path.join(process.cwd(), 'reviewlens.db');
 }
 
-let db: Database.Database | null = null;
+let db = null;
 
 /**
  * Gets or creates the SQLite database connection.
  * Creates the cache table if it doesn't exist.
  */
-export function getDb(): Database.Database {
+export function getDb() {
   if (!db) {
     db = new Database(getDbPath());
 
@@ -42,21 +41,16 @@ export function getDb(): Database.Database {
  * Looks up a cached analysis by text hash.
  * Returns the analysis if found, null otherwise.
  */
-export function getCachedAnalysis(textHash: string): AIAnalysis | null {
+export function getCachedAnalysis(textHash) {
   const database = getDb();
   const row = database
     .prepare('SELECT sentiment, topics, summary, needs_reply FROM review_cache WHERE text_hash = ?')
-    .get(textHash) as {
-    sentiment: string;
-    topics: string;
-    summary: string;
-    needs_reply: number;
-  } | undefined;
+    .get(textHash);
 
   if (!row) return null;
 
   return {
-    sentiment: row.sentiment as AIAnalysis['sentiment'],
+    sentiment: row.sentiment,
     topics: JSON.parse(row.topics),
     summary: row.summary,
     needs_reply: Boolean(row.needs_reply),
@@ -66,7 +60,7 @@ export function getCachedAnalysis(textHash: string): AIAnalysis | null {
 /**
  * Saves an analysis result to the persistent cache.
  */
-export function saveAnalysis(textHash: string, analysis: AIAnalysis): void {
+export function saveAnalysis(textHash, analysis) {
   const database = getDb();
   database
     .prepare(
@@ -86,9 +80,9 @@ export function saveAnalysis(textHash: string, analysis: AIAnalysis): void {
  * Checks which hashes already have cached results.
  * Returns a map of hash -> analysis for all found entries.
  */
-export function batchLookup(hashes: string[]): Map<string, AIAnalysis> {
-  const results = new Map<string, AIAnalysis>();
-  if (hashes.length === 0) return results;
+export function batchLookup(hashes) {
+  const results = new Map();
+  if (!hashes || hashes.length === 0) return results;
 
   const database = getDb();
 
@@ -102,17 +96,11 @@ export function batchLookup(hashes: string[]): Map<string, AIAnalysis> {
          FROM review_cache
          WHERE text_hash IN (${placeholders})`
       )
-      .all(...batch) as Array<{
-      text_hash: string;
-      sentiment: string;
-      topics: string;
-      summary: string;
-      needs_reply: number;
-    }>;
+      .all(...batch);
 
     for (const row of rows) {
       results.set(row.text_hash, {
-        sentiment: row.sentiment as AIAnalysis['sentiment'],
+        sentiment: row.sentiment,
         topics: JSON.parse(row.topics),
         summary: row.summary,
         needs_reply: Boolean(row.needs_reply),
@@ -126,7 +114,7 @@ export function batchLookup(hashes: string[]): Map<string, AIAnalysis> {
 /**
  * Clears the cache. Useful for tests or database resets.
  */
-export function clearCache(): void {
+export function clearCache() {
   const database = getDb();
   database.exec('DELETE FROM review_cache');
 }
@@ -134,7 +122,7 @@ export function clearCache(): void {
 /**
  * Closes the database connection. Useful for cleanup.
  */
-export function closeDb(): void {
+export function closeDb() {
   if (db) {
     db.close();
     db = null;

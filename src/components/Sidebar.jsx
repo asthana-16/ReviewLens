@@ -11,12 +11,6 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-interface SidebarProps {
-  activeSection: string;
-  onSectionChange: (section: string) => void;
-  hasData: boolean;
-}
-
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'upload', label: 'Upload Reviews', icon: UploadCloud },
@@ -25,7 +19,7 @@ const navItems = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
-export default function Sidebar({ activeSection, onSectionChange, hasData }: SidebarProps) {
+export default function Sidebar({ activeSection, onSectionChange, hasData }) {
   return (
     <aside className="w-64 bg-[#0f172a] text-slate-300 flex flex-col min-h-screen border-r border-slate-800 shrink-0 select-none">
       {/* Brand Header */}
@@ -114,7 +108,7 @@ export default function Sidebar({ activeSection, onSectionChange, hasData }: Sid
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs text-slate-300 font-medium">Gemini 2.0 Flash</span>
+            <span className="text-xs text-slate-300 font-medium">Gemini Flash</span>
           </div>
           <span className="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
             <CheckCircle2 className="w-3 h-3 text-slate-400" />

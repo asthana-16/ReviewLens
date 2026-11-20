@@ -1,21 +1,17 @@
 import crypto from 'crypto';
 import Papa from 'papaparse';
-import type { RawReview, CleanedReview } from '@/types';
 
 /**
  * Parses a CSV string into raw review objects.
  * Uses PapaParse for safe, robust CSV parsing.
  */
-export function parseCSV(csvContent: string): {
-  reviews: RawReview[];
-  errors: string[];
-} {
-  const errors: string[] = [];
+export function parseCSV(csvContent) {
+  const errors = [];
 
-  const result = Papa.parse<RawReview>(csvContent, {
+  const result = Papa.parse(csvContent, {
     header: true,
     skipEmptyLines: true,
-    transformHeader: (header: string) => header.trim().toLowerCase(),
+    transformHeader: (header) => header.trim().toLowerCase(),
   });
 
   // Check for required columns
@@ -45,7 +41,7 @@ export function parseCSV(csvContent: string): {
  * - Collapses multiple spaces
  * - Converts to lowercase
  */
-export function normalizeText(text: string): string {
+export function normalizeText(text) {
   return text
     .trim()
     .replace(/\s+/g, ' ')
@@ -55,7 +51,7 @@ export function normalizeText(text: string): string {
 /**
  * Creates a SHA-256 hash of normalized text for cache keys and duplicate detection.
  */
-export function hashText(text: string): string {
+export function hashText(text) {
   const normalized = normalizeText(text);
   return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
 }
@@ -65,12 +61,12 @@ export function hashText(text: string): string {
  * Returns a number (1-5) or null for missing/invalid ratings.
  * Handles edge cases like "five", empty strings, non-numeric values.
  */
-export function parseRating(raw: string | undefined | null): number | null {
-  if (raw === undefined || raw === null || raw.trim() === '') {
+export function parseRating(raw) {
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
     return null; // Missing rating → unknown
   }
 
-  const trimmed = raw.trim();
+  const trimmed = String(raw).trim();
 
   // Try parsing as a number first
   const num = Number(trimmed);
@@ -79,7 +75,6 @@ export function parseRating(raw: string | undefined | null): number | null {
   }
 
   // Don't try to convert word ratings like "five" — treat as unknown
-  // The assignment says invalid ratings like "five" should be unknown
   return null;
 }
 
@@ -87,7 +82,7 @@ export function parseRating(raw: string | undefined | null): number | null {
  * Escapes HTML special characters to prevent XSS.
  * Review text is treated as untrusted user input.
  */
-export function escapeHtml(text: string): string {
+export function escapeHtml(text) {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -100,16 +95,11 @@ export function escapeHtml(text: string): string {
  * Cleans and validates a batch of raw reviews.
  * Returns cleaned reviews and processing statistics.
  */
-export function cleanReviews(rawReviews: RawReview[]): {
-  cleaned: CleanedReview[];
-  skipped: number;
-  duplicateCount: number;
-  duplicateMap: Map<string, string[]>; // hash → list of review IDs with same text
-} {
-  const cleaned: CleanedReview[] = [];
+export function cleanReviews(rawReviews) {
+  const cleaned = [];
   let skipped = 0;
-  const seenHashes = new Map<string, string>(); // hash → first review ID
-  const duplicateMap = new Map<string, string[]>(); // hash → all review IDs
+  const seenHashes = new Map(); // hash → first review ID
+  const duplicateMap = new Map(); // hash → all review IDs
   let duplicateCount = 0;
 
   for (const raw of rawReviews) {
@@ -138,11 +128,11 @@ export function cleanReviews(rawReviews: RawReview[]): {
 
     // Track duplicates
     if (seenHashes.has(textHash)) {
-      const originalId = seenHashes.get(textHash)!;
+      const originalId = seenHashes.get(textHash);
       if (!duplicateMap.has(textHash)) {
         duplicateMap.set(textHash, [originalId]);
       }
-      duplicateMap.get(textHash)!.push(reviewId);
+      duplicateMap.get(textHash).push(reviewId);
       duplicateCount++;
 
       // Still add the review but mark it — it will share analysis with the original

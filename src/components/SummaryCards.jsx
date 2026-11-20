@@ -9,19 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-interface SummaryCardsProps {
-  summary: {
-    total: number;
-    completed: number;
-    positivePercent: number;
-    neutralPercent: number;
-    negativePercent: number;
-    needsReply: number;
-    ratingAgreementPercent: number;
-  };
-}
-
-export default function SummaryCards({ summary }: SummaryCardsProps) {
+export default function SummaryCards({ summary }) {
   const cards = [
     {
       label: 'Total Reviews',

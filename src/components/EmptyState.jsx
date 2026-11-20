@@ -8,11 +8,7 @@ import {
   Lock,
 } from 'lucide-react';
 
-interface EmptyStateProps {
-  onUploadClick: () => void;
-}
-
-export default function EmptyState({ onUploadClick }: EmptyStateProps) {
+export default function EmptyState({ onUploadClick }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-8 sm:p-12 max-w-4xl mx-auto text-center shadow-sm">
       {/* Decorative Icon */}

@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { analyseReview } from '@/services/ai-service';
 import { saveAnalysis } from '@/services/cache-service';
-import type { AnalysedReview, AnalysisStatus } from '@/types';
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
       ratingMismatch = (isHighRating && isNegative) || (isLowRating && isPositive);
     }
 
-    const updatedReview: AnalysedReview = {
+    const updatedReview = {
       reviewId,
       product,
       rating: rating ?? null,
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
       textHash,
       status: 'valid',
       analysis,
-      analysisStatus: 'completed' as AnalysisStatus,
+      analysisStatus: 'completed',
       isCached: false,
       ratingMismatch,
     };
