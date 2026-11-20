@@ -46,6 +46,29 @@ export function getDb() {
         updated_at TEXT DEFAULT (datetime('now'))
       )
     `);
+
+    // Seed initial cache if empty and not in test environment
+    if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+      try {
+        const countRow = db.prepare('SELECT count(*) as count FROM review_cache').get();
+        if (countRow.count === 0) {
+          const seedPath = path.join(process.cwd(), 'src', 'data', 'seed-cache.json');
+          if (fs.existsSync(seedPath)) {
+            const seedData = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+            const insertStmt = db.prepare(`
+              INSERT OR IGNORE INTO review_cache (text_hash, sentiment, topics, summary, needs_reply)
+              VALUES (@text_hash, @sentiment, @topics, @summary, @needs_reply)
+            `);
+            const insertMany = db.transaction((rows) => {
+              for (const row of rows) insertStmt.run(row);
+            });
+            insertMany(seedData);
+          }
+        }
+      } catch (seedErr) {
+        console.warn('Could not seed initial cache:', seedErr);
+      }
+    }
   }
   return db;
 }

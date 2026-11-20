@@ -55,7 +55,7 @@ export async function analyseWithRetry(reviewText, apiKey, customCaller) {
       return result;
     } catch (error) {
       if (isRetryableError(error) && attempt < MAX_RETRIES - 1) {
-        const backoffMs = getBackoffDelay(attempt);
+        const backoffMs = Math.min(getBackoffDelay(attempt), 2000);
         console.warn(
           `Retryable rate limit or server error on attempt ${attempt + 1}/${MAX_RETRIES}. Waiting ${Math.round(backoffMs)}ms before retry...`
         );
@@ -72,6 +72,8 @@ export async function analyseWithRetry(reviewText, apiKey, customCaller) {
 /**
  * Processes reviews in batches with rate limit handling and caching.
  */
+const MAX_PROCESSING_TIME_MS = 45000;
+
 export async function processReviews(cleanedReviews, apiKey, options) {
   const startTime = Date.now();
   let aiCalls = 0;
@@ -100,6 +102,12 @@ export async function processReviews(cleanedReviews, apiKey, options) {
   const totalToProcess = hashesToProcess.length;
 
   for (let i = 0; i < hashesToProcess.length; i += BATCH_SIZE) {
+    // Safety guard: if approaching serverless execution limit, break out and return partial results
+    if (Date.now() - startTime > MAX_PROCESSING_TIME_MS) {
+      console.warn('Approaching serverless timeout limit. Returning processed reviews so far.');
+      break;
+    }
+
     const batch = hashesToProcess.slice(i, i + BATCH_SIZE);
 
     // Process reviews within the batch in parallel

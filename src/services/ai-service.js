@@ -35,10 +35,10 @@ MULTILINGUAL & EDGE CASES:
 
 // Primary model and fallback cascade for high availability and resilient quotas
 const MODEL_CANDIDATES = [
-  'gemini-flash-latest',
+  'gemini-flash-lite-latest',
   'gemini-3.1-flash-lite',
-  'gemini-3-flash-preview',
-  'gemini-3.8-flash',
+  'gemini-flash-latest',
+  'gemini-3.5-flash-lite',
 ];
 
 /**
