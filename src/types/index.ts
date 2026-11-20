@@ -36,9 +36,12 @@ export interface AIAnalysis {
   needs_reply: boolean;
 }
 
+export type AnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'skipped';
+
 export interface AnalysedReview extends CleanedReview {
   analysis: AIAnalysis | null;
-  analysisStatus: 'success' | 'failed' | 'cached' | 'pending';
+  analysisStatus: AnalysisStatus;
+  isCached?: boolean;
   ratingMismatch?: boolean;
 }
 
@@ -58,6 +61,7 @@ export interface DashboardData {
   stats: ProcessingStats;
   summary: {
     total: number;
+    completed: number;
     positivePercent: number;
     neutralPercent: number;
     negativePercent: number;

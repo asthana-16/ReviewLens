@@ -12,6 +12,7 @@ import {
 interface SummaryCardsProps {
   summary: {
     total: number;
+    completed: number;
     positivePercent: number;
     neutralPercent: number;
     negativePercent: number;
@@ -25,9 +26,9 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
     {
       label: 'Total Reviews',
       value: summary.total.toLocaleString(),
-      subtext: `${summary.ratingAgreementPercent}% rating alignment`,
+      subtext: `${summary.completed} analysed • ${summary.ratingAgreementPercent}% alignment`,
       icon: BarChart3,
-      badge: 'Analyzed',
+      badge: 'Uploaded',
       badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
       iconColor: 'text-blue-600',
       iconBg: 'bg-blue-50',
@@ -35,7 +36,7 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
     {
       label: 'Positive Sentiment',
       value: `${summary.positivePercent}%`,
-      subtext: `${Math.round((summary.total * summary.positivePercent) / 100)} satisfied customers`,
+      subtext: `${Math.round((summary.completed * summary.positivePercent) / 100)} satisfied customers`,
       icon: TrendingUp,
       badge: 'Positive',
       badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -45,7 +46,7 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
     {
       label: 'Neutral Sentiment',
       value: `${summary.neutralPercent}%`,
-      subtext: `${Math.round((summary.total * summary.neutralPercent) / 100)} mixed opinions`,
+      subtext: `${Math.round((summary.completed * summary.neutralPercent) / 100)} mixed opinions`,
       icon: Minus,
       badge: 'Neutral',
       badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -55,7 +56,7 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
     {
       label: 'Negative Sentiment',
       value: `${summary.negativePercent}%`,
-      subtext: `${Math.round((summary.total * summary.negativePercent) / 100)} critical reviews`,
+      subtext: `${Math.round((summary.completed * summary.negativePercent) / 100)} critical reviews`,
       icon: TrendingDown,
       badge: 'Attention',
       badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',

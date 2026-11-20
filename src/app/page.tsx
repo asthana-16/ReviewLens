@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { DashboardData } from '@/types';
+import type { DashboardData, AnalysedReview } from '@/types';
+import { aggregateAnalytics } from '@/services/analytics-service';
 import Sidebar from '@/components/Sidebar';
 import UploadSection from '@/components/UploadSection';
 import SummaryCards from '@/components/SummaryCards';
@@ -31,6 +32,20 @@ export default function Home() {
   const handleResetData = () => {
     setData(null);
     setActiveSection('dashboard');
+  };
+
+  const handleReviewUpdate = (updatedReview: AnalysedReview) => {
+    setData((prev) => {
+      if (!prev) return null;
+      const newReviews = prev.reviews.map((r) =>
+        r.reviewId === updatedReview.reviewId ? updatedReview : r
+      );
+      return aggregateAnalytics(newReviews, {
+        ...prev.stats,
+        failed: Math.max(0, prev.stats.failed - 1),
+        aiCalls: prev.stats.aiCalls + 1,
+      });
+    });
   };
 
   return (
@@ -140,7 +155,10 @@ export default function Home() {
                   <ProcessingStats stats={data.stats} />
 
                   {/* Filterable Review Table */}
-                  <ReviewsTable reviews={data.reviews} />
+                  <ReviewsTable
+                    reviews={data.reviews}
+                    onReviewUpdate={handleReviewUpdate}
+                  />
                 </div>
               )}
             </>

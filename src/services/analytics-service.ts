@@ -4,16 +4,21 @@ import type { AnalysedReview, DashboardData, ProcessingStats, ProductAnalytics }
  * Aggregates analytics from analysed reviews.
  * Computes summary statistics, top complaints, top praises,
  * and per-product analytics.
+ *
+ * CRITICAL RULE:
+ * Failed or skipped reviews must NEVER be treated as negative.
+ * Sentiment percentages and feedback are calculated strictly from completed analyses.
  */
 export function aggregateAnalytics(
   reviews: AnalysedReview[],
   stats: ProcessingStats
 ): DashboardData {
-  const analysedReviews = reviews.filter(
-    (r) => r.analysis !== null && r.analysisStatus !== 'failed'
+  // Only completed reviews with valid AI analysis contribute to sentiment analytics
+  const completedReviews = reviews.filter(
+    (r) => r.analysisStatus === 'completed' && r.analysis !== null
   );
 
-  const total = analysedReviews.length;
+  const completedCount = completedReviews.length;
 
   // Count sentiments
   const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
@@ -27,7 +32,7 @@ export function aggregateAnalytics(
   let ratingComparisons = 0;
   let agreements = 0;
 
-  for (const review of analysedReviews) {
+  for (const review of completedReviews) {
     if (!review.analysis) continue;
 
     sentimentCounts[review.analysis.sentiment]++;
@@ -63,7 +68,7 @@ export function aggregateAnalytics(
     { total: number; positive: number; neutral: number; negative: number; issues: string[] }
   >();
 
-  for (const review of analysedReviews) {
+  for (const review of completedReviews) {
     if (!review.analysis) continue;
 
     if (!productMap.has(review.product)) {
@@ -97,10 +102,14 @@ export function aggregateAnalytics(
     reviews,
     stats,
     summary: {
-      total,
-      positivePercent: total > 0 ? Math.round((sentimentCounts.positive / total) * 100) : 0,
-      neutralPercent: total > 0 ? Math.round((sentimentCounts.neutral / total) * 100) : 0,
-      negativePercent: total > 0 ? Math.round((sentimentCounts.negative / total) * 100) : 0,
+      total: stats.totalUploaded,
+      completed: completedCount,
+      positivePercent:
+        completedCount > 0 ? Math.round((sentimentCounts.positive / completedCount) * 100) : 0,
+      neutralPercent:
+        completedCount > 0 ? Math.round((sentimentCounts.neutral / completedCount) * 100) : 0,
+      negativePercent:
+        completedCount > 0 ? Math.round((sentimentCounts.negative / completedCount) * 100) : 0,
       needsReply,
       ratingAgreementPercent:
         ratingComparisons > 0 ? Math.round((agreements / ratingComparisons) * 100) : 0,

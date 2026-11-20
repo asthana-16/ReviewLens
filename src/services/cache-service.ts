@@ -2,8 +2,12 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import type { AIAnalysis } from '@/types';
 
-// Database file is stored at the project root
-const DB_PATH = path.join(process.cwd(), 'reviewlens.db');
+function getDbPath(): string {
+  if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
+    return path.join(process.cwd(), 'reviewlens.test.db');
+  }
+  return path.join(process.cwd(), 'reviewlens.db');
+}
 
 let db: Database.Database | null = null;
 
@@ -11,9 +15,9 @@ let db: Database.Database | null = null;
  * Gets or creates the SQLite database connection.
  * Creates the cache table if it doesn't exist.
  */
-function getDb(): Database.Database {
+export function getDb(): Database.Database {
   if (!db) {
-    db = new Database(DB_PATH);
+    db = new Database(getDbPath());
 
     // Enable WAL mode for better concurrent read performance
     db.pragma('journal_mode = WAL');
@@ -60,7 +64,7 @@ export function getCachedAnalysis(textHash: string): AIAnalysis | null {
 }
 
 /**
- * Saves an analysis result to the cache.
+ * Saves an analysis result to the persistent cache.
  */
 export function saveAnalysis(textHash: string, analysis: AIAnalysis): void {
   const database = getDb();
@@ -80,7 +84,7 @@ export function saveAnalysis(textHash: string, analysis: AIAnalysis): void {
 
 /**
  * Checks which hashes already have cached results.
- * Returns a map of hash → analysis for all found entries.
+ * Returns a map of hash -> analysis for all found entries.
  */
 export function batchLookup(hashes: string[]): Map<string, AIAnalysis> {
   const results = new Map<string, AIAnalysis>();
@@ -88,7 +92,6 @@ export function batchLookup(hashes: string[]): Map<string, AIAnalysis> {
 
   const database = getDb();
 
-  // SQLite has a variable limit, so we batch the lookups
   const BATCH_SIZE = 100;
   for (let i = 0; i < hashes.length; i += BATCH_SIZE) {
     const batch = hashes.slice(i, i + BATCH_SIZE);
@@ -118,6 +121,14 @@ export function batchLookup(hashes: string[]): Map<string, AIAnalysis> {
   }
 
   return results;
+}
+
+/**
+ * Clears the cache. Useful for tests or database resets.
+ */
+export function clearCache(): void {
+  const database = getDb();
+  database.exec('DELETE FROM review_cache');
 }
 
 /**

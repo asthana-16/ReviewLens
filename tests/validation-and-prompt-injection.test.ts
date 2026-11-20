@@ -40,15 +40,17 @@ describe('AI Validation and Prompt Injection Defense', () => {
     expect(validateAIResponse(emptyTopics)).toBeNull();
   });
 
-  it('parses JSON wrapped inside markdown code fences safely', () => {
-    const fencedJson = `\`\`\`json
+  it('parses JSON wrapped inside markdown code fences safely even with conversational prefix', () => {
+    const fencedJson = `Here is the requested analysis:
+\`\`\`json
 {
   "sentiment": "negative",
   "topics": ["delivery"],
   "summary": "Delivery was severely delayed",
   "needs_reply": true
 }
-\`\`\``;
+\`\`\`
+Hope this helps!`;
 
     const parsed = parseAndValidateAIResponse(fencedJson);
     expect(parsed).not.toBeNull();

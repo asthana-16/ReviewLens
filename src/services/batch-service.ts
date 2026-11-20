@@ -1,6 +1,6 @@
 import { analyseReview } from './ai-service';
 import { saveAnalysis, batchLookup } from './cache-service';
-import type { CleanedReview, AnalysedReview, AIAnalysis, ProcessingStats } from '@/types';
+import type { CleanedReview, AnalysedReview, AIAnalysis, ProcessingStats, AnalysisStatus } from '@/types';
 
 export const BATCH_SIZE = 5;
 export const MAX_RETRIES = 3;
@@ -78,11 +78,12 @@ export async function analyseWithRetry(
  * Processes reviews in batches with rate limit handling and caching.
  *
  * Flow:
- * 1. Collect all unique text hashes from valid reviews
- * 2. Check persistent cache for existing analyses
- * 3. Send uncached reviews to AI in batches of BATCH_SIZE
- * 4. Save new analyses to persistent SQLite cache
- * 5. Apply analyses to all reviews (including duplicate instances)
+ * 1. Filter out empty reviews (marked as 'skipped')
+ * 2. Collect unique text hashes from valid reviews
+ * 3. Check persistent SQLite cache
+ * 4. Send uncached reviews to AI in batches of BATCH_SIZE
+ * 5. Save new analyses to SQLite cache
+ * 6. Map analyses back to all review instances with accurate statuses
  */
 export async function processReviews(
   cleanedReviews: CleanedReview[],
@@ -135,6 +136,7 @@ export async function processReviews(
         aiCalls++;
       } else {
         failed++;
+        console.error(`Analysis failed for review text hash ${hash.slice(0, 8)}...`);
       }
     }
 
@@ -153,19 +155,21 @@ export async function processReviews(
 
   // Step 6: Map analyses back to all review instances
   const analysed: AnalysedReview[] = cleanedReviews.map((review) => {
+    // Empty review: skipped, never failed
     if (review.status === 'empty') {
       return {
         ...review,
         analysis: null,
-        analysisStatus: 'failed' as const,
+        analysisStatus: 'skipped' as AnalysisStatus,
+        isCached: false,
       };
     }
 
     const analysis = allAnalyses.get(review.textHash) || null;
     const isCached = cachedResults.has(review.textHash);
+    const status: AnalysisStatus = analysis ? 'completed' : 'failed';
 
-    // Rating and sentiment mismatch detection:
-    // e.g. 5 stars but negative text (R008), or 1-2 stars but positive text
+    // Rating and sentiment mismatch detection
     let ratingMismatch = false;
     if (analysis && review.rating !== null) {
       const isHighRating = review.rating >= 4;
@@ -179,11 +183,8 @@ export async function processReviews(
     return {
       ...review,
       analysis,
-      analysisStatus: analysis
-        ? isCached
-          ? ('cached' as const)
-          : ('success' as const)
-        : ('failed' as const),
+      analysisStatus: status,
+      isCached,
       ratingMismatch,
     };
   });

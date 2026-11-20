@@ -15,11 +15,13 @@ import {
   Star,
   Sparkles,
   RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import type { AnalysedReview, Topic } from '@/types';
 
 interface ReviewsTableProps {
   reviews: AnalysedReview[];
+  onReviewUpdate?: (review: AnalysedReview) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -39,7 +41,7 @@ const SENTIMENT_STYLES = {
   },
 };
 
-export default function ReviewsTable({ reviews }: ReviewsTableProps) {
+export default function ReviewsTable({ reviews, onReviewUpdate }: ReviewsTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProduct, setFilterProduct] = useState<string>('all');
   const [filterSentiment, setFilterSentiment] = useState<string>('all');
@@ -48,7 +50,37 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
   const [replyStates, setReplyStates] = useState<
     Record<string, { loading: boolean; reply: string | null; error: string | null; copied: boolean }>
   >({});
+  const [retryingReviews, setRetryingReviews] = useState<Record<string, boolean>>({});
   const [selectedReview, setSelectedReview] = useState<AnalysedReview | null>(null);
+
+  const handleRetryReview = async (review: AnalysedReview) => {
+    setRetryingReviews((prev) => ({ ...prev, [review.reviewId]: true }));
+    try {
+      const response = await fetch('/api/retry-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewId: review.reviewId,
+          product: review.product,
+          rating: review.rating,
+          date: review.date,
+          reviewText: review.reviewText,
+          textHash: review.textHash,
+        }),
+      });
+
+      const result = await response.json();
+      if (!result.success || !result.review) {
+        throw new Error(result.error || 'Failed to retry review analysis');
+      }
+
+      onReviewUpdate?.(result.review);
+    } catch (err) {
+      alert(`Retry failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setRetryingReviews((prev) => ({ ...prev, [review.reviewId]: false }));
+    }
+  };
 
   // Unique products
   const products = useMemo(
@@ -294,10 +326,11 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
                         </span>
                         {review.ratingMismatch && (
                           <span
-                            title="Rating mismatch: Customer star rating contradicts negative AI sentiment (e.g. 5 stars on broken product)"
-                            className="inline-flex items-center justify-center p-1 rounded bg-amber-50 text-amber-600 border border-amber-200"
+                            title={`Rating Mismatch: Customer assigned ${review.rating}/5 stars, but written feedback expresses ${review.analysis?.sentiment || 'contradictory'} sentiment.`}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 cursor-help text-[10px] font-semibold"
                           >
-                            <AlertTriangle className="w-3 h-3" />
+                            <AlertTriangle className="w-3 h-3 text-amber-600" />
+                            <span className="hidden xl:inline">Mismatch</span>
                           </span>
                         )}
                       </div>
@@ -334,14 +367,41 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
                     {/* Sentiment Badge */}
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       {review.analysis && sentimentStyle ? (
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize border ${sentimentStyle.badge}`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${sentimentStyle.dot}`} />
-                          {review.analysis.sentiment}
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize border ${sentimentStyle.badge}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${sentimentStyle.dot}`} />
+                            {review.analysis.sentiment}
+                          </span>
+                          {review.isCached && (
+                            <span
+                              title="Retrieved from persistent SQLite cache without calling Gemini API"
+                              className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200"
+                            >
+                              Cached
+                            </span>
+                          )}
+                        </div>
+                      ) : review.analysisStatus === 'skipped' ? (
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                          Skipped (Empty)
                         </span>
                       ) : (
-                        <span className="text-slate-400 text-xs italic">Failed</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
+                            Analysis Failed
+                          </span>
+                          <button
+                            onClick={() => handleRetryReview(review)}
+                            disabled={retryingReviews[review.reviewId]}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors disabled:opacity-50"
+                            title="Retry AI analysis for this review"
+                          >
+                            <RefreshCw className={`w-2.5 h-2.5 ${retryingReviews[review.reviewId] ? 'animate-spin text-indigo-600' : ''}`} />
+                            <span>Retry</span>
+                          </button>
+                        </div>
                       )}
                     </td>
 
@@ -361,11 +421,24 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
 
                     {/* AI English Summary */}
                     <td className="px-4 py-3.5 max-w-[260px]">
-                      <p className="text-slate-800 line-clamp-2 leading-relaxed">
-                        {review.analysis?.summary || (
-                          <span className="text-slate-400 italic">Analysis unavailable</span>
-                        )}
-                      </p>
+                      {review.analysis?.summary ? (
+                        <p className="text-slate-800 line-clamp-2 leading-relaxed">
+                          {review.analysis.summary}
+                        </p>
+                      ) : review.analysisStatus === 'skipped' ? (
+                        <span className="text-slate-400 italic">Empty review (skipped)</span>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-slate-400 italic">
+                          <span>Analysis unavailable</span>
+                          <button
+                            onClick={() => handleRetryReview(review)}
+                            disabled={retryingReviews[review.reviewId]}
+                            className="not-italic text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 underline ml-1 cursor-pointer"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     {/* Action buttons */}
@@ -515,6 +588,19 @@ export default function ReviewsTable({ reviews }: ReviewsTableProps) {
                 </p>
               </div>
             </div>
+
+            {/* Rating Mismatch Alert Banner in Modal */}
+            {selectedReview.ratingMismatch && (
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-amber-900">Rating Contradiction Detected</p>
+                  <p className="text-amber-700 mt-0.5 leading-relaxed">
+                    The customer assigned a {selectedReview.rating}/5 star rating, but their feedback conveys {selectedReview.analysis?.sentiment} sentiment (e.g. sarcastic praise, or a high star rating mistakenly given on a broken product complaint).
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Raw Text vs AI Summary */}
             <div className="space-y-3 text-xs">
