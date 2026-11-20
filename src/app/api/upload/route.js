@@ -3,6 +3,10 @@ import { parseCSV, cleanReviews } from '@/services/csv-service';
 import { processReviews } from '@/services/batch-service';
 import { aggregateAnalytics } from '@/services/analytics-service';
 
+// Allow up to 60 seconds execution time on Vercel Hobby serverless functions
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 // Maximum upload size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 

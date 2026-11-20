@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { generateReply } from '@/services/ai-service';
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;

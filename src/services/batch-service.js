@@ -102,11 +102,16 @@ export async function processReviews(cleanedReviews, apiKey, options) {
   for (let i = 0; i < hashesToProcess.length; i += BATCH_SIZE) {
     const batch = hashesToProcess.slice(i, i + BATCH_SIZE);
 
-    // Process reviews within the batch
-    for (const hash of batch) {
-      const text = hashToText.get(hash);
-      const analysis = await analyseWithRetry(text, apiKey, options?.customCaller);
+    // Process reviews within the batch in parallel
+    const batchResults = await Promise.all(
+      batch.map(async (hash) => {
+        const text = hashToText.get(hash);
+        const analysis = await analyseWithRetry(text, apiKey, options?.customCaller);
+        return { hash, analysis };
+      })
+    );
 
+    for (const { hash, analysis } of batchResults) {
       if (analysis) {
         newAnalyses.set(hash, analysis);
         saveAnalysis(hash, analysis);
